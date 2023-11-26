@@ -2,6 +2,66 @@ import cv2 as cv
 import numpy as np
 import random as rng
 
+def is_contour_circle(contour, epsilon_factor=0.02, circularity_threshold=0.5,min_area = 300)-> bool:
+    """ Checks if the detected contour is circle or not """
+    epsilon = epsilon_factor * cv.arcLength(contour, True)
+    approx = cv.approxPolyDP(contour, epsilon, True)
+    if len(approx) >= 8:  
+        area = cv.contourArea(contour)
+        perimeter = cv.arcLength(contour, True)
+        circularity = 4 * np.pi * (area / (perimeter ** 2))
+        return circularity > circularity_threshold and area > min_area
+
+    return False
+
+def get_contours_centers(contours)-> list:
+    """ Calculate the centroid of the contour """
+    contour_centers = []
+    for contour in contours:
+        M = cv.moments(contour)
+        if M["m00"] != 0:
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            contour_centers.append([cX,cY])
+
+    return np.array(contour_centers,dtype=int)
+
+def get_contour_radius(contour)->int:
+    """ Return the radius of circular contour """
+    area =  cv.contourArea(contour)
+    perimeter = cv.arcLength(contour,True)
+    radius = int((2*area) / perimeter)
+    return radius   
+
+def combine_close_contours(centers,threshold_distance=25)-> list:
+    """
+        This function is used with circular contours
+        If two circular contour is too close two each other , they represent the same checkers.
+        So they will be counted as one 
+    """
+    length = len(centers)
+    distance = 0
+    result = []
+    centers = np.array(centers)
+    for i in range(0,length):
+        add_flag = True
+        distance = 0
+        for j in range(i+1,length):
+            distance = np.sqrt((centers[i,0] - centers[j,0])**2 + (centers[i,1] - centers[j,1])**2)
+            if distance < threshold_distance: # if two contour is close
+                add_flag = False
+                break
+        if add_flag:
+           result.append([centers[i,0],centers[i,1]])
+    
+    return np.array(result,dtype=int)
+
+def is_checker_white(frame_gray,point)->int:
+    """ Classify checkers as black(0) or white(1) """
+    return frame_gray[point[1],point[0]]>180 and 1 or 0
+
+
+# Set available camera                          
 video_capture = cv.VideoCapture("source/vid1.avi")
 # Read the first frame
 success, frame = video_capture.read()
