@@ -62,7 +62,7 @@ class Checkers():
         return Movement.Wrong
 
     def find_different_white_index(self): 
-
+        global recorder
         # Eskide olup da yenide olmayan 
         old_sqaure_white_indexes = self.get_indexes_changes(self.square_index_with_white_checkers_old,self.square_index_with_white_checkers_new)
         old_sqaure_black_indexes = self.get_indexes_changes(self.square_index_with_black_checkers_old,self.square_index_with_black_checkers_new)
@@ -78,14 +78,15 @@ class Checkers():
         number_old_black = len(old_sqaure_black_indexes)   
 
         self.movement = self.what_happaned(number_new_white,number_old_white,number_new_black,number_old_black)      
-        
         print("Movement:",self.movement)
 
+        player = get_player(self.movement)
+        self.defeated_indexes = None
+        
         match self.movement:
             case Movement.White:
                 self.movement_old_index = self.get_closest_index(old_sqaure_white_indexes,new_sqaure_white_indexes[0])
                 self.movement_new_index = new_sqaure_white_indexes[0]
-                self.defeated_indexes = None
                 print("White New: ",new_sqaure_white_indexes)
                 print("White Old: ",old_sqaure_white_indexes)
             case Movement.WhiteWithBlack:
@@ -97,8 +98,7 @@ class Checkers():
                 print("Defeated Blacks: ",old_sqaure_black_indexes)
             case Movement.Black:
                 self.movement_old_index = self.get_closest_index(old_sqaure_black_indexes,new_sqaure_black_indexes[0])
-                self.movement_new_index = new_sqaure_black_indexes[0]
-                self.defeated_indexes = None                
+                self.movement_new_index = new_sqaure_black_indexes[0]            
                 print("Black New: ",new_sqaure_black_indexes)
                 print("Black Old: ",old_sqaure_black_indexes)
             case Movement.BlackWithWhite:
@@ -111,7 +111,8 @@ class Checkers():
             case _:
                 self.movement_old_index = None
                 self.movement_new_index = None
-                self.defeated_indexes = None
+        if self.movement != Movement.Wrong:
+            recorder.record(player,self.movement_old_index,self.movement_new_index,self.defeated_indexes)
 
         print()
         
@@ -203,7 +204,16 @@ def get_square_position(square_index):
         y_position = square_index[1] * square_y_scaler + square_y_bias
         return ( x_position , y_position )
     
-
+def get_player(movement):
+    match movement:
+        case Movement.White:
+            return Player.White
+        case Movement.WhiteWithBlack:
+            return Player.White
+        case Movement.Black:
+            return Player.Black
+        case Movement.BlackWithWhite:
+            return Player.Black
 
 def get_contours_centers(contours)-> list:
     """ Calculate the centroid of the contour """
@@ -340,7 +350,15 @@ class IndexDetector:
         for cent in centers:
             cv.putText(bird_eye_frame,"Black",(cent[0]-10,cent[1]-20),1,1,(0,255,0),2)
             cv.circle(bird_eye_frame, (cent[0], cent[1]), radius, (0, 0, 255), 3)              
-        
+
+class GameMovementRecorder:
+    records = list()
+    def record(self,player:Player,old_player,new_player,defeateds):
+        self.records.append([player,old_player,new_player,defeateds])
+
+    def show(self):
+        for movement in self.records:
+            print(movement)
 
 # Set available camera                          
 video_capture = cv.VideoCapture("source/vid1.avi")
@@ -358,6 +376,7 @@ square_y_bias = square_y_scaler//2
 # Checker Manager
 manager = Checkers()
 index_detector = IndexDetector()
+recorder = GameMovementRecorder()
 
 # Parameters for preprocessing 
 b_k = 7  # Gaussian Blur Kernel Size
@@ -429,10 +448,13 @@ while success:
         manager.set_square_black_index(index_detector.black_result_index)
         manager.find_different_white_index()
         set_old_frame_for_hand_detection(full_view_frame_gray)
-
-    # For visualization
+        
+    # For hand detection visualization
     diff = cv.absdiff(old_frame, full_view_frame_gray)
     t,diff = cv.threshold(diff,60,255,cv.THRESH_BINARY)
+    cv.imshow("Frame Diff", diff)
+
+
     # Show all detected checkers
     # index_detector.visualize(radius)
     # Show changes
@@ -440,13 +462,11 @@ while success:
 
     # Show the result
     cv.imshow("Frame ",frame)
-    cv.imshow("Frame Diff", diff)
     cv.imshow("Chessboard Bird Eye", bird_eye_frame)
-    # cv.imshow("dilated_edges", dilated_edges)
 
-    # old_frame = full_view_frame_gray
-    key = cv.waitKey(100)
+    key = cv.waitKey(200)
     if key == 27:
+        recorder.show()
         break
 
     
