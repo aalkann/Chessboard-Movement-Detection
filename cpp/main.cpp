@@ -11,14 +11,15 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    VideoCapture video_capture("vid1.avi");
+    VideoCapture video_capture("/source/vid1.avi");
     
     Mat frame;
     bool success = video_capture.read(frame);
     
     Mat current_full_frame_gray;
     cvtColor(frame, current_full_frame_gray, COLOR_BGR2GRAY);
-    Mat old_full_frame_gray = current_full_frame_gray;
+    Mat old_full_frame_gray;
+    current_full_frame_gray.copyTo(old_full_frame_gray);
     bool hand_on_screen = false;
     bool hand_on_screen_previous = false;
     int frame_count_while_hand_out = 1;
@@ -52,24 +53,24 @@ int main() {
         }
         
         if (frame_count_while_hand_out != 0 && hand_on_screen == false) {
-            Mat bird_eye_frame_gray;
+            Mat bird_eye_frame_gray,bird_eye_frame_gray_temp;
             cvtColor(bird_eye_frame, bird_eye_frame_gray, COLOR_BGR2GRAY);
-            
+            bird_eye_frame_gray.copyTo(bird_eye_frame_gray_temp);
             Mat bird_eye_frame_gray_gamma_corrected;
-	        if (!bird_eye_frame_gray.empty()) {
+	        if (!bird_eye_frame_gray_temp.empty()) {
                 double minVal, maxVal;
                 cv::Point minLoc, maxLoc;
 
                 // Find the minimum and maximum values in the input matrix
-                cv::minMaxLoc(bird_eye_frame_gray, &minVal, &maxVal, &minLoc, &maxLoc);
+                cv::minMaxLoc(bird_eye_frame_gray_temp, &minVal, &maxVal, &minLoc, &maxLoc);
 
                 // Ensure the input matrix is of the correct data type
-                if (bird_eye_frame_gray.type() != CV_32F && bird_eye_frame_gray.type() != CV_64F) {
-                    bird_eye_frame_gray.convertTo(bird_eye_frame_gray, CV_32F); // or CV_64F
+                if (bird_eye_frame_gray_temp.type() != CV_32F && bird_eye_frame_gray_temp.type() != CV_64F) {
+                    bird_eye_frame_gray_temp.convertTo(bird_eye_frame_gray_temp, CV_32F); // or CV_64F
                 }
 
                 // Apply the power operation and store the result
-                cv::pow(bird_eye_frame_gray / maxVal, 0.7, bird_eye_frame_gray_gamma_corrected);
+                cv::pow(bird_eye_frame_gray_temp / maxVal, 0.7, bird_eye_frame_gray_gamma_corrected);
 
                 // Convert the resulting matrix to 8-bit unsigned integer format
                 bird_eye_frame_gray_gamma_corrected.convertTo(bird_eye_frame_gray_gamma_corrected, CV_8U, 255);
@@ -87,7 +88,6 @@ int main() {
             
             Mat dilated_edges;
             dilate(edges, dilated_edges, getStructuringElement(MORPH_RECT, Size(kernelMorp.rows, kernelMorp.cols)), Point(-1, -1), 2);
-            
             vector<vector<Point>> contours;
             vector<Vec4i> hierarchy;
             findContours(dilated_edges, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
@@ -123,12 +123,10 @@ int main() {
                 r.defeats = std::get<3>(record);
                 recorder.record(r);
             }
-            
-            old_full_frame_gray = current_full_frame_gray;
         }
         
         visualize_hand_tracking(old_full_frame_gray, current_full_frame_gray);
-        
+        current_full_frame_gray.copyTo(old_full_frame_gray);
         manager.apply_changes(bird_eye_frame, radius);
         
         imshow("Frame ", frame);

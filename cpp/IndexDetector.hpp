@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "functions.hpp"
+#include "variables.hpp"
 struct PointComparator {
     bool operator()(const cv::Point& lhs, const cv::Point& rhs) const {
         if (lhs.y != rhs.y) {
@@ -31,8 +32,8 @@ public:
 		return n;
 	}
     void set_index(std::vector<std::vector<cv::Point>> contours, cv::Mat bird_eye_frame_gray) {
-        std::vector<std::vector<int>> contour_centers = get_contours_centers(contours);
-        std::vector<std::vector<int>> contour_centers_combined = combine_close_contours(contour_centers);
+        std::vector<cv::Point> contour_centers = get_contours_centers(contours);
+        std::vector<cv::Point> contour_centers_combined = combine_close_contours(contour_centers);
         std::vector<cv::Point> white_checker_index;
         std::vector<cv::Point> black_checker_index;
         for (auto cent : contour_centers_combined) {
@@ -55,39 +56,38 @@ public:
         }
     }
 
-    cv::Point get_square_index_from_center(std::vector<int> center) {
-        int square_x_scaler, square_y_scaler;
-        cv::Point p(center[0] / square_x_scaler,center[1] / square_x_scaler);
+    cv::Point get_square_index_from_center(cv::Point center) {
+        cv::Point p(center.x / square_x_scaler,center.y / square_y_scaler);
         return p;
     }
 
-    bool is_checker_white(cv::Mat frame_gray, std::vector<int> point) {
-        return frame_gray.at<uchar>(point[1], point[0]) > 180;
+    bool is_checker_white(cv::Mat frame_gray, cv::Point point) {
+        return frame_gray.at<uchar>(point.y, point.x) > 180;
     }
 
-    std::vector<std::vector<int>> combine_close_contours(std::vector<std::vector<int>> centers, int threshold_distance = 25) {
+    std::vector<cv::Point> combine_close_contours(std::vector<cv::Point> centers, int threshold_distance = 25) {
         int length = centers.size();
         int distance = 0;
-        std::vector<std::vector<int>> result;
+        std::vector<cv::Point> result;
         for (int i = 0; i < length; i++) {
             bool add_flag = true;
             distance = 0;
             for (int j = i + 1; j < length; j++) {
-                distance = std::sqrt(std::pow(centers[i][0] - centers[j][0], 2) + std::pow(centers[i][1] - centers[j][1], 2));
+                distance = std::sqrt(std::pow(centers[i].x - centers[j].x, 2) + std::pow(centers[i].y - centers[j].y, 2));
                 if (distance < threshold_distance) {
                     add_flag = false;
                     break;
                 }
             }
             if (add_flag) {
-                result.push_back({centers[i][0], centers[i][1]});
+                result.push_back(centers[i]);
             }
         }
         return result;
     }
 
-    std::vector<std::vector<int>> get_contours_centers(std::vector<std::vector<cv::Point>> contours) {
-        std::vector<std::vector<int>> contour_centers;
+    std::vector<cv::Point> get_contours_centers(std::vector<std::vector<cv::Point>> contours) {
+        std::vector<cv::Point> contour_centers;
         for (auto contour : contours) {
             cv::Moments M = cv::moments(contour);
             if (M.m00 != 0) {

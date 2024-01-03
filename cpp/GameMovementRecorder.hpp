@@ -19,7 +19,7 @@ public:
     }
     void show() {
         for (auto movement : records) {
-            std::cout << "Player: "<<to_string(movement.p)<<" Old player: " <<movement.old_player<<" New player: "<<movement.new_player<<" defeated pieces: ";
+            std::cout << "Player: "<<to_string(movement.p)<<" Old location: " <<movement.old_player<<" New location: "<<movement.new_player<<" defeated pieces locations: ";
             for(auto x:movement.defeats){
                 cout<<x<<" ";
             }

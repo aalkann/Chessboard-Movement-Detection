@@ -26,10 +26,12 @@ bool is_contour_circle(vector<Point> contour, double epsilon_factor=0.02, double
 }
 
 bool is_hand_inside(bool hand_on_screen, Mat current_frame, Mat old_frame, int thresh=60, int sensitivity=6) {
-    Mat diff;
+    Mat diff,tempdiff;
     absdiff(old_frame, current_frame, diff);
     threshold(diff, diff, thresh, 255, THRESH_BINARY);
-    int different_pixels_number = countNonZero(diff);
+    diff.convertTo(tempdiff,CV_32S);
+    cv::Scalar sum = cv::sum(tempdiff);
+    int different_pixels_number = static_cast<int>(sum[0]);
     if(different_pixels_number == 0) different_pixels_number = 1;
     double result = diff.total() / different_pixels_number;
     if (result <= sensitivity && !hand_on_screen) {
