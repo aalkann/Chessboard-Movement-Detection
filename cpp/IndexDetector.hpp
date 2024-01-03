@@ -119,8 +119,8 @@ public:
 
     void calculate_indexes() {
         std::vector<std::vector<cv::Point>> indexes = combine_indexes();
-        white_result_index = {indexes[0][0],indexes[0][1]};
-        black_result_index = {indexes[1][0],indexes[1][1]};
+        white_result_index = indexes[0];
+        black_result_index = indexes[1];
     }
 
     void visualize_all_checkers(int radius, cv::Mat bird_eye_frame) {

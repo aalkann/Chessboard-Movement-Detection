@@ -30,6 +30,7 @@ bool is_hand_inside(bool hand_on_screen, Mat current_frame, Mat old_frame, int t
     absdiff(old_frame, current_frame, diff);
     threshold(diff, diff, thresh, 255, THRESH_BINARY);
     int different_pixels_number = countNonZero(diff);
+    if(different_pixels_number == 0) different_pixels_number = 1;
     double result = diff.total() / different_pixels_number;
     if (result <= sensitivity && !hand_on_screen) {
         return true;

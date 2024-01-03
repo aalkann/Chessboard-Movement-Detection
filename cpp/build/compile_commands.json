@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/eray/Desktop/chess/build",
+  "command": "/usr/bin/g++  -isystem /usr/local/include/opencv4  -g -g -o CMakeFiles/CheckerboardDetection.dir/main.cpp.o -c /home/eray/Desktop/chess/main.cpp",
+  "file": "/home/eray/Desktop/chess/main.cpp"
+}
+]

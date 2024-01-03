@@ -56,11 +56,28 @@ int main() {
             cvtColor(bird_eye_frame, bird_eye_frame_gray, COLOR_BGR2GRAY);
             
             Mat bird_eye_frame_gray_gamma_corrected;
-	    cv::minMaxLoc(bird_eye_frame_gray, &minVal, &maxVal, &minLoc, &maxLoc);
-	    
-	    
-            pow(bird_eye_frame_gray / maxVal, 0.7, bird_eye_frame_gray_gamma_corrected);
-            bird_eye_frame_gray_gamma_corrected.convertTo(bird_eye_frame_gray_gamma_corrected, CV_8U, 255);
+	        if (!bird_eye_frame_gray.empty()) {
+                double minVal, maxVal;
+                cv::Point minLoc, maxLoc;
+
+                // Find the minimum and maximum values in the input matrix
+                cv::minMaxLoc(bird_eye_frame_gray, &minVal, &maxVal, &minLoc, &maxLoc);
+
+                // Ensure the input matrix is of the correct data type
+                if (bird_eye_frame_gray.type() != CV_32F && bird_eye_frame_gray.type() != CV_64F) {
+                    bird_eye_frame_gray.convertTo(bird_eye_frame_gray, CV_32F); // or CV_64F
+                }
+
+                // Apply the power operation and store the result
+                cv::pow(bird_eye_frame_gray / maxVal, 0.7, bird_eye_frame_gray_gamma_corrected);
+
+                // Convert the resulting matrix to 8-bit unsigned integer format
+                bird_eye_frame_gray_gamma_corrected.convertTo(bird_eye_frame_gray_gamma_corrected, CV_8U, 255);
+            } else {
+                // Handle the case where the input matrix is empty
+                std::cerr << "Error: Empty input matrix." << std::endl;
+                // Additional error handling if needed
+            }
             
             Mat bird_eye_frame_blur;
             GaussianBlur(bird_eye_frame_gray_gamma_corrected, bird_eye_frame_blur, Size(gaussianBlurKernelSize, gaussianBlurKernelSize), 0);

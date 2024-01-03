@@ -136,7 +136,7 @@ public:
         return result;
     }
 
-    void apply_changes(Mat bird_eye_frame, int radius) {
+    void apply_changes(Mat &bird_eye_frame, int radius) {
         if (movement_new_index == Point() || movement_old_index == Point()) {
             return;
         }
